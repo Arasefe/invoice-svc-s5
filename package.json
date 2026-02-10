@@ -1,0 +1,20 @@
+{
+  "name": "invoice-svc",
+  "version": "1.6.0",
+  "description": "Acme invoice service (DevSecOps course lab app — Session 5)",
+  "private": true,
+  "main": "dist/app.js",
+  "scripts": {
+    "start": "node dist/app.js",
+    "build": "esbuild src/app.js --bundle --platform=node --format=cjs --packages=external --outfile=dist/app.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "4.21.2",
+    "md-to-pdf": "5.2.5",
+    "round-to": "6.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.9"
+  }
+}

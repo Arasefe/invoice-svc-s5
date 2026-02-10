@@ -1,0 +1,30 @@
+# Carried over from Session 4: build + test on every push/PR, plus the dependency
+# gate (Trivy). Session 5 ADDS a second workflow, security.yml (secret scanning in
+# Lab 1, SAST in Lab 2) — students create it, it is intentionally not here yet.
+name: ci
+on: [push, pull_request]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+  dependency-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Session 4 fix: pin the action to a safe release (see CA-12 / the Trivy
+      # supply-chain compromise). Prefer a full commit SHA in a real repo.
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL
+          exit-code: "1"

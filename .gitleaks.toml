@@ -1,0 +1,21 @@
+# Gitleaks config for invoice-svc (Session 5, Gate 1 / secret scanning).
+#
+# Keeps all the default rules (AWS keys, generic tokens, ...) and adds one for the
+# billing-partner key format `pk_live_...`, so `gitleaks git .` reliably finds the
+# PARTNER_API_KEY that was committed to history (and later removed) — the INC-0485 leak.
+#
+# After rotating the exposed key, record the known-old finding in a baseline so the
+# gate blocks only NEW leaks:
+#     gitleaks git . --report-path gitleaks-report.json
+#     gitleaks git . --baseline-path gitleaks-report.json
+title = "invoice-svc gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "partner-api-key"
+description = "Billing partner live API key (pk_live_...)"
+regex = '''pk_live_[0-9a-fA-F]{16,}'''
+keywords = ["pk_live_"]
+tags = ["key", "partner"]
