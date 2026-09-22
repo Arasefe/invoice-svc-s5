@@ -1,0 +1,18 @@
+# Backup Semgrep rule for Session 5 (Gate 2 / SAST), in case the registry's
+# `--config auto` ruleset is unavailable on the shared network. Primary command in
+# the slides is:   semgrep scan --config auto --error
+# Deterministic fallback:   semgrep scan --config .semgrep.yml --error
+rules:
+  - id: partner-path-traversal-sendfile
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >
+      Path traversal: caller-controlled input (req.query.file) flows into a file
+      path and is served with res.sendFile. A '../' escapes the base directory.
+      Fix: look up the invoice by id and verify the resolved path stays under BASE.
+    mode: taint
+    pattern-sources:
+      - pattern: req.query.file
+      - pattern: req.query.$X
+    pattern-sinks:
+      - pattern: res.sendFile(...)
