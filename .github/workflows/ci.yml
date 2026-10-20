@@ -20,11 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Session 4 fix: pin the action to a safe release (see CA-12 / the Trivy
-      # supply-chain compromise). Prefer a full commit SHA in a real repo.
-      - uses: aquasecurity/trivy-action@v0.32.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          severity: CRITICAL
-          exit-code: "1"
+      # Session 4 fix: pin the scanner EXACTLY (see CA-12 / the Trivy supply-chain
+      # compromise). Trivy runs from its pinned official image, so the gate does not
+      # depend on the trivy-action tag chain (which drifted upstream and broke CI).
+      - name: Trivy dependency scan (fail on CRITICAL)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >
+          docker run --rm -e GITHUB_TOKEN -v "$PWD:/src" aquasec/trivy:0.76.0
+          fs --scanners vuln --severity CRITICAL --exit-code 1 /src
