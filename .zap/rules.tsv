@@ -1,0 +1,7 @@
+# ZAP baseline rule config for invoice-svc (Session 5, Gate 3 / DAST).
+# Every rule not listed stays WARN, and fail_action makes any WARN fail the dast job.
+# Each IGNORE is a triaged, reviewable decision (Session 5: "suppress - with a reason"):
+10049	IGNORE	(Storable and Cacheable Content: informational; the home page and health checks are public and safe to cache)
+10055	IGNORE	(CSP policy-quality notes on helmet's default policy, e.g. style-src 'unsafe-inline'; tightening the CSP is tracked hardening, the header itself is gated by 10038)
+10063	IGNORE	(Permissions Policy Header Not Set: the app uses no browser features; tracked hardening)
+90004	IGNORE	(Insufficient Site Isolation / COEP: nothing cross-origin is embedded; tracked hardening)

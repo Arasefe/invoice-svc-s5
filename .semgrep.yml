@@ -16,3 +16,7 @@ rules:
       - pattern: req.query.$X
     pattern-sinks:
       - pattern: res.sendFile(...)
+    # An id coerced to a number can no longer carry '../' — that is the Lab 2 fix.
+    pattern-sanitizers:
+      - pattern: Number(...)
+      - pattern: parseInt(...)
