@@ -1,10 +1,15 @@
-# Carried over from Session 4: build + test on every push/PR, plus the dependency
-# gate (Trivy). Session 5 ADDS a second workflow, security.yml (secret scanning in
-# Lab 1, SAST in Lab 2) — students create it, it is intentionally not here yet.
+# Session-4 pipeline, carried into Session 5 as the STARTING POINT. Every push / PR is
+# installed, tested, built and dependency-scanned (Trivy); then — on main — the exact
+# build is packaged with a SHA-256 and deployed by the pipeline.
+#
+# Session 5 BUILDS ON THIS: in the labs you ADD two more workflows —
+#   security.yml  (secret scanning, SAST, SBOM)   and   dast.yml  (ZAP).
+# Leave this file as-is during the labs.
 name: ci
 on: [push, pull_request]
 
 jobs:
+  # CA-2 — install dependencies, run the tests, build
   build-test:
     runs-on: ubuntu-latest
     steps:
@@ -16,6 +21,7 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  # CA-3 — fail the build on a known-CRITICAL dependency (Trivy, pinned image)
   dependency-scan:
     runs-on: ubuntu-latest
     steps:
@@ -29,3 +35,45 @@ jobs:
         run: >
           docker run --rm -e GITHUB_TOKEN -v "$PWD:/src" aquasec/trivy:0.76.0
           fs --scanners vuln --severity CRITICAL --exit-code 1 /src
+
+  # CA-4 / CA-5 — build ONCE on a fresh runner, record a SHA-256, publish the artifact
+  release:
+    needs: [build-test, dependency-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - run: npm run build
+      - name: Package the release + checksum
+        run: |
+          tar -czf "invoice-${GITHUB_SHA}.tar.gz" dist package.json package-lock.json
+          sha256sum "invoice-${GITHUB_SHA}.tar.gz" | tee "invoice-${GITHUB_SHA}.tar.gz.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: invoice-release
+          path: |
+            invoice-${{ github.sha }}.tar.gz
+            invoice-${{ github.sha }}.tar.gz.sha256
+
+  # CA-6 — deploy, only from the pipeline, only on main, the exact artifact we built
+  deploy:
+    needs: release
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: invoice-release
+      - name: Verify the artifact's SHA-256 before shipping
+        run: sha256sum -c "invoice-${GITHUB_SHA}.tar.gz.sha256"
+      - name: Deploy
+        run: |
+          echo "Deploying invoice-${GITHUB_SHA}.tar.gz to web-01 ..."
+          # Lab stub: the pipeline ships the exact artifact it built and checksummed.
+          # To deploy for real, add an SSH key secret and replace the echo below:
+          #   install -m600 /dev/stdin key <<< "${{ secrets.DEPLOY_KEY }}"
+          #   scp -i key invoice-${GITHUB_SHA}.tar.gz deploy@web-01:/srv/releases/
+          echo "Deployed. (lab stub - no external egress)"
